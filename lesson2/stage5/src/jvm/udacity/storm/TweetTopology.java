@@ -357,6 +357,10 @@ public class TweetTopology {
         //"[Your secret key]",
         //"[Your access token]",
         //"[Your access secret]"
+        "SmQR6VKSG1nll1kTUV0J1zmQz",
+        "z5m42H8mfvXRk4yN8EXNdWiTxCvgj4LqAKs4e7Jvu2S3TVj991",
+        "2599282818-t0Hl7v5CLS7tXoFku4MGgLKfK1iIr1dTzVfyXLP",
+        "eCG0oMRnHW8SilwnDbUNhwmn3ZjDfb497DQVfA8DB3wxv"
     );
 
     // attach the tweet spout to the topology - parallelism of 1
@@ -368,7 +372,9 @@ public class TweetTopology {
     // Part 2: // attach the count bolt, parallelism of 15 (what grouping is needed?)
     // Part 3: attach the report bolt, parallelism of 1 (what grouping is needed?)
     // Submit and run the topology.
-
+    builder.setBolt("parse-bolt",new ParseTweetBolt(),10).shuffleGrouping("tweet-spout");
+    builder.setBolt("count-bolt",new CountBolt(),15).fieldsGrouping("parse-bolt", new Fields("tweet-word"));
+    builder.setBolt("report-bolt", new ReportBolt(), 1).globalGrouping("count-bolt");
 
     //*********************************************************************
 

@@ -1,0 +1,4 @@
+/vagrant/lesson2/stage3/src/jvm/udacity/storm/WordCountTopology.java
+/vagrant/lesson2/stage3/src/jvm/udacity/storm/SentenceCountTopology.java
+/vagrant/lesson2/stage3/src/jvm/udacity/storm/SentenceWordCountTopology.java
+/vagrant/lesson2/stage3/src/jvm/udacity/storm/spout/RandomSentenceSpout.java

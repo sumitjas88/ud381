@@ -17,6 +17,7 @@ import backtype.storm.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 
+import udacity.storm.spout.*;
 //******* Import MyLikesSpout and MyNamesSpout
 
 
@@ -39,6 +40,7 @@ public class ExclamationTopology {
   {
     // To output tuples from this bolt to the next stage bolts, if any
     OutputCollector _collector;
+    private HashMap<String,String> favMap ;
 
     @Override
     public void prepare(
@@ -48,6 +50,7 @@ public class ExclamationTopology {
     {
       // save the output collector for emitting tuples
       _collector = collector;
+      favMap = new HashMap<String,String>();
     }
 
     @Override
@@ -58,16 +61,27 @@ public class ExclamationTopology {
       /*
        * Use component id to modify behavior
        */
-
+       if (tuple.getSourceComponent().equals("my-like")) {
+         String word = tuple.getString(0);
+         String[] t = word.split("#");
+         favMap.put(tuple.getString(0),tuple.getString(1));
+       }
+       if (tuple.getSourceComponent().equals("my-name")) {
+         String word = tuple.getString(0);
+         if (favMap.containsKey(word)) {
+           StringBuilder exclamatedWord = new StringBuilder();
+           exclamatedWord.append(word + "favorite is " +favMap.get(word)).append("!!!");
+           _collector.emit(tuple, new Values(exclamatedWord.toString()));
+         }
+       }
       // get the column word from tuple
       String word = tuple.getString(0);
 
       // build the word with the exclamation marks appended
-      StringBuilder exclamatedWord = new StringBuilder();
-      exclamatedWord.append(word).append("!!!");
+
 
       // emit the word with exclamations
-      _collector.emit(tuple, new Values(exclamatedWord.toString()));
+
     }
 
     @Override
@@ -86,13 +100,19 @@ public class ExclamationTopology {
     TopologyBuilder builder = new TopologyBuilder();
 
     // attach the word spout to the topology - parallelism of 10
-    builder.setSpout("word", new TestWordSpout(), 10);
+    //builder.setSpout("word", new TestWordSpout(), 10);
+    builder.setSpout("my-name", new MyNamesSpout(), 10);
+    builder.setSpout("my-like", new MyLikesSpout(), 10);
 
     // attach the exclamation bolt to the topology - parallelism of 3
-    builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("word");
+    builder.setBolt("exclaim1", new ExclamationBolt(), 3)
+                .shuffleGrouping("my-like")
+                .shuffleGrouping("my-name");
 
     // attach another exclamation bolt to the topology - parallelism of 2
     builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
+
+    builder.setBolt("report-bolt", new ReportBolt(),1).shuffleGrouping("exclaim1");
 
     // create the default config object
     Config conf = new Config();
